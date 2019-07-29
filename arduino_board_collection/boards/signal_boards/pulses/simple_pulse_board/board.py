@@ -1,5 +1,4 @@
-from arduino_controller.basicboard.board import ArduinoBasicBoard
-from arduino_controller.basicboard.arduino_data import ArduinoData
+from arduino_controller.basicboard.board import ArduinoBasicBoard, ArduinoBasicBoardArduinoData
 from arduino_controller.arduino_variable import arduio_variable
 
 
@@ -7,16 +6,17 @@ class SimplePulseBoard(ArduinoBasicBoard):
     FIRMWARE = 15627604053828192
     CLASSNAME = "Simple Pulse Board"
     PULSE_TYPE_SQUARE = 0
-    PULSE_TYPE_SIN = 1
+    PULSE_TYPE_SINE = 1
+    PULSEPIN=6
 
-    pulse_type = arduio_variable(name="pulse_type", default=1,maximum=1)
+    pulse_type = arduio_variable(name="pulse_type", default=1,maximum=1,allowed_values={PULSE_TYPE_SQUARE: "square", PULSE_TYPE_SINE: "sine"})
     wavelength = arduio_variable(name="wavelength", type="uint16_t",minimum=1,default=1000)  # in millisec
     current_val = arduio_variable(name="current_val", type="uint16_t",is_data_point=True)  # in mV
     running = arduio_variable(name="pulsing", type="bool")
 
     def __init__(self):
         super().__init__()
-        self.inocreator.add_creator(SimplePulseBoardArduinoData)
+        #self.inocreator.add_creator(SimplePulseBoardArduinoData)
 
     def get_frequency(self):
         return 1000 / self.wavelength
@@ -26,41 +26,47 @@ class SimplePulseBoard(ArduinoBasicBoard):
 
     frequency = property(get_frequency, set_frequency)
 
-
-class SimplePulseBoardArduinoData(ArduinoData):
-
-    def definitions(self):  # name:value
-        return {'PULSE_TYPE_SQUARE': 0,
-                'PULSE_TYPE_SIN': 1,
-                'PULSEPIN':6}
-
-    def global_vars(self):  # name:[type,defaultvalue]  array possible: "array[ARRAYSIZE]": ["uint8_t", None]
-        return {'pulse_pos': ["double", 0],
-                'max_current_val': ["uint16_t", -1]}
-
-    def includes(self):  # ["<Package.h"]
-        return []
-
-    def functions(self):  # name:[returntype,[(argtype,argname),...], stringcode]
-        return {}
-
-    def setup(self):  # stringcode
-        return ""
-
-    def loop(self):  # stringcode
-        return "if(pulsing){\n" \
-               "pulse_pos = (ct%wavelength)/(1.0*wavelength);\n" \
-               "if(pulse_type == PULSE_TYPE_SQUARE){\n" \
-               "if(pulse_pos<0.5)\ncurrent_val = max_current_val;\nelse\ncurrent_val = 0;\n" \
-               "}else if(pulse_type == PULSE_TYPE_SIN){\n" \
-               "current_val = (1+sin(pulse_pos*2*PI))/2*max_current_val;\n"\
-               "}\n" \
-               "analogWrite(PULSEPIN, map(current_val, 0, max_current_val, 0, 255));\n" \
-               "}"
-
-    def dataloop(self):  # stringcode
-        return 'write_data(current_val,'+str(self.board_instance.get_portcommand_by_name("get_current_val").byteid)+');'
-
+#
+# class SimplePulseBoardArduinoData(ArduinoData):
+#
+#     pulse_pos = ArduinoDataGlobalVariable("pulse_pos", ArduinoDataTypes.double, 0)
+#     max_current_val = ArduinoDataGlobalVariable("max_current_val", ArduinoDataTypes.uint16_t, -1)
+#
+#     def __init__(self, board_instance):
+#         super().__init__(board_instance)
+#         self.loop_function = ArduinoLoopFunction(
+#             ArduinoDataFunction.if_condition(
+#                 board_instance.get_module_var_by_name("running").name,
+#                 self.pulse_pos.code_set(ArduinoDataFunction.divide(
+#                     ArduinoDataFunction.mod(ArduinoBasicBoardArduinoData.ct,board_instance.get_module_var_by_name("wavelength").name),
+#                     ArduinoDataFunction.multiply(float(1.0),board_instance.get_module_var_by_name("wavelength").name)
+#                 ))+
+#                 ArduinoDataFunction.if_condition(
+#                     ArduinoDataFunction.equal(board_instance.get_module_var_by_name("pulse_type").name,board_instance.PULSE_TYPE_SQUARE),
+#                     ArduinoDataFunction.if_condition(ArduinoDataFunction.lesser_equal_than(self.pulse_pos,0.5),
+#                                                      ArduinoDataFunction.set_variable(board_instance.get_module_var_by_name("current_val").name,self.max_current_val)
+#                                                      )+
+#                     ArduinoDataFunction.else_condition(ArduinoDataFunction.set_variable(board_instance.get_module_var_by_name("current_val").name,0))
+#                 )+
+#                 ArduinoDataFunction.elseif_condition(
+#                     ArduinoDataFunction.equal(board_instance.get_module_var_by_name("pulse_type").name,board_instance.PULSE_TYPE_SINE),
+#                     ArduinoDataFunction.set_variable(board_instance.get_module_var_by_name("current_val").name,
+#                                                      ArduinoDataFunction.multiply(self.max_current_val,
+#                                                                         ArduinoDataFunction.divide(
+#                                                                             ArduinoDataFunction.add(1,
+#                                                                                                     ArduinoDataFunction.sin(
+#                                                                                                         ArduinoDataFunction.multiply(2,self.pulse_pos,ArduinoDataFunction.PI())
+#                                                                                                     ))
+#                                                                         ,2)
+#                                                      )
+#                                                      )
+#                 )+
+#                 ArduinoDataFunction.analog_write(board_instance.PULSEPIN,
+#                                                  ArduinoDataFunction.map(board_instance.get_module_var_by_name("current_val").name,0,self.max_current_val,0,255)
+#                                                  )
+#             )
+#
+#         )
 
 if __name__ == '__main__':
     ins = SimplePulseBoard()

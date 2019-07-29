@@ -4,9 +4,11 @@ import numpy as np
 
 import scipy.interpolate
 
-from arduino_controller.basicboard.board import ArduinoBasicBoard
-from arduino_controller.basicboard.arduino_data import ArduinoData
-from arduino_controller.arduino_variable import arduio_variable, arduino_var_to_struc_available
+from ArduinoCodeCreator.arduino_data_types import uint32_t, uint8_t, int32_t, void, ArduinoDataType
+from ArduinoCodeCreator.functions import ArduinoFunction
+from ArduinoCodeCreator.variable import ArduinoVariable
+from arduino_controller.arduino_variable import arduio_variable
+from arduino_controller.basicboard.board import ArduinoBasicBoard, COMMAND_FUNCTION_COMMUNICATION_ARGUMENTS
 from arduino_controller.python_variable import python_variable
 
 REL_IR_SENSITIVITY = np.array([(301.5282884840381, 0.0003707002656236913),
@@ -346,67 +348,77 @@ def luminosity_splitter(var, instance, data, send_to_board=True):
     instance.ch0 = struct.unpack("H", sc[:2])[0]
     instance.ch1 = struct.unpack("H", sc[2:])[0]
     try:
-        instance.estimated_wavelength=RATIO_TO_WAVELENGHT(instance.ch1 / instance.ch0)
+        instance.estimated_wavelength = RATIO_TO_WAVELENGHT(instance.ch1 / instance.ch0)
     except:
         pass
+
+
+
 
 
 class Tsl2591(ArduinoBasicBoard):
     FIRMWARE = 15633422980183442
 
+    tsl2591Gain_t = ArduinoDataType("tsl2591Gain_t",None)
+    Adafruit_TSL2591 = ArduinoDataType("Adafruit_TSL2591",None)
+
+    arduino_tsl = ArduinoVariable(arduino_data_type=Adafruit_TSL2591,name="tsl",value="Adafruit_TSL2591({})".format(
+        random.randint(int32_t.minimum,
+                       int32_t.maximum)))
+
+    arduino_tsl.add_function(code="setGain",
+                             argumens = (tsl2591Gain_t,"gain"),
+                             caller=None#"tsl.setGain((tsl2591Gain_t) data[0]);"
+                             )
+
     ch0 = python_variable("ch0", type='float', changeable=False, is_data_point=True)
     ch1 = python_variable("ch1", type='float', changeable=False, is_data_point=True)
     estimated_wavelength = python_variable("estimated_wavelength", type='int', changeable=False, is_data_point=True)
 
-    luminosity = arduio_variable("luminosity", type="uint32_t", is_data_point=True, arduino_setter=False,
+    luminosity = arduio_variable("luminosity", arduino_data_type=uint32_t, is_data_point=True, arduino_setter=False,
                                  setter=luminosity_splitter)
-    gain = arduio_variable("gain", type="uint8_t",
+    gain = arduio_variable("gain", arduino_data_type=uint8_t,
                            allowed_values={0x00: "low gain (1x)", 0x10: "medium gain (25x)", 0x20: "medium gain (428x)",
                                            0x30: "max gain (9876x)", },
-                           arduino_setter="tsl.setGain((tsl2591Gain_t) data[0]);",
-                           arduino_getter='write_data(tsl.getGain(),{BYTEID});',
+                           arduino_setter=ArduinoFunction(code=[
+                               arduino_tsl.setGain(COMMAND_FUNCTION_COMMUNICATION_ARGUMENTS[0].get(0))
+                           ],name="setg"),
+                       #    arduino_getter='write_data(tsl.getGain(),{BYTEID});',
                            is_global_var=False
                            )
-    integration_time = arduio_variable("integration_time", type="uint8_t",
+    integration_time = arduio_variable("integration_time", arduino_data_type=uint8_t,
                                        allowed_values={0x00: "100 millis", 0x01: "200 millis", 0x02: "300 millis",
                                                        0x03: "400 millis", 0x04: "500 millis", 0x05: "600 millis"},
-                                       arduino_setter="tsl.setTiming((tsl2591IntegrationTime_t) data[0]);",
-                                       arduino_getter='write_data(tsl.getTiming(),{BYTEID});',
+                                      # arduino_setter="tsl.setTiming((tsl2591IntegrationTime_t) data[0]);",
+                                     #  arduino_getter='write_data(tsl.getTiming(),{BYTEID});',
                                        is_global_var=False
                                        )
 
     def __init__(self):
         super().__init__()
-        self.inocreator.add_creator(Tsl2591ArduinoData)
 
-
-class Tsl2591ArduinoData(ArduinoData):
-
-    def definitions(self):  # name:value
-        return {}
-
-    def global_vars(self):  # name:[type,defaultvalue]  array possible: "array[ARRAYSIZE]": ["uint8_t", None]
-        return {"tsl": ["Adafruit_TSL2591", "Adafruit_TSL2591(" + str(
-            random.randint(arduino_var_to_struc_available['int32_t'].minimum,
-                           arduino_var_to_struc_available['int32_t'].maximum)) + ")"]}
-
-    def includes(self):  # ["<Package.h"]
-        return ['"Adafruit_TSL2591.h"']
-
-    def functions(self):  # name:[returntype,[(argtype,argname),...], stringcode] 
-        return {}
-
-    def setup(self):  # stringcode
-        return ""
-
-    def loop(self):  # stringcode
-        return "if(identified){" \
-               "luminosity=tsl.getFullLuminosity();\n" \
-               "}"
-
-    def dataloop(self):  # stringcode
-        return 'write_data(luminosity,' + str(
-            self.board_instance.get_portcommand_by_name("get_luminosity").byteid) + ');\n'
+    def add_arduino_code(self,ad):
+        pass
+        #self.inocreator.add_creator(Tsl2591ArduinoData)
+#
+#
+# class Tsl2591ArduinoData(ArduinoData):
+#     tsl = ArduinoDataGlobalVariable("tsl", arduino_type="Adafruit_TSL2591", value="Adafruit_TSL2591({})".format(
+#         random.randint(arduino_var_to_struc_available['int32_t'].minimum,
+#                        arduino_var_to_struc_available['int32_t'].maximum)))
+#     tsl_include = ArduinoDataInclude("Adafruit_TSL2591.h", relative=True)
+#
+#     def __init__(self, board_instance):
+#         super().__init__(board_instance)
+#         self.loop_function = ArduinoLoopFunction(
+#             ArduinoDataFunction.if_condition(ArduinoBasicBoardArduinoData.identified,
+#                                              ArduinoDataFunction.set_variable(
+#                                                  board_instance.get_module_var_by_name("luminosity").name,
+#                                                  "{}.getFullLuminosity()".format(self.tsl)
+#                                                  )
+#                                              )
+#
+#         )
 
 
 if __name__ == '__main__':
