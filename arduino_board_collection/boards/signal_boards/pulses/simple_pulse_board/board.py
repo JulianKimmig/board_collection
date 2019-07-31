@@ -1,4 +1,5 @@
-from arduino_controller.basicboard.board import ArduinoBasicBoard, ArduinoBasicBoardArduinoData
+from ArduinoCodeCreator.arduino_data_types import *
+from arduino_controller.basicboard.board import ArduinoBasicBoard
 from arduino_controller.arduino_variable import arduio_variable
 
 
@@ -7,16 +8,30 @@ class SimplePulseBoard(ArduinoBasicBoard):
     CLASSNAME = "Simple Pulse Board"
     PULSE_TYPE_SQUARE = 0
     PULSE_TYPE_SINE = 1
-    PULSEPIN=6
+    PULSEPIN = 6
 
-    pulse_type = arduio_variable(name="pulse_type", default=1,maximum=1,allowed_values={PULSE_TYPE_SQUARE: "square", PULSE_TYPE_SINE: "sine"})
-    wavelength = arduio_variable(name="wavelength", type="uint16_t",minimum=1,default=1000)  # in millisec
-    current_val = arduio_variable(name="current_val", type="uint16_t",is_data_point=True)  # in mV
-    running = arduio_variable(name="pulsing", type="bool")
+    pulse_type = arduio_variable(
+        name="pulse_type",
+        default=PULSE_TYPE_SINE,
+        maximum=1,
+        allowed_values={PULSE_TYPE_SQUARE: "square", PULSE_TYPE_SINE: "sine"},
+        eeprom=True,
+    )
+
+    pulse_pin = arduio_variable(
+        name="pulse_pin", arduino_data_type=uint8_t, eeprom=True
+    )
+
+    wavelength = arduio_variable(
+        name="wavelength", arduino_data_type=uint16_t, minimum=1, default=1000
+    )  # in millisec
+    current_val = arduio_variable(
+        name="current_val", arduino_data_type=uint16_t, is_data_point=True, save=False
+    )  # in mV
+    running = arduio_variable(name="pulsing", arduino_data_type=bool_)
 
     def __init__(self):
         super().__init__()
-        #self.inocreator.add_creator(SimplePulseBoardArduinoData)
 
     def get_frequency(self):
         return 1000 / self.wavelength
@@ -25,6 +40,7 @@ class SimplePulseBoard(ArduinoBasicBoard):
         self.wavelength = 1000 / hertz
 
     frequency = property(get_frequency, set_frequency)
+
 
 #
 # class SimplePulseBoardArduinoData(ArduinoData):
@@ -68,6 +84,6 @@ class SimplePulseBoard(ArduinoBasicBoard):
 #
 #         )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ins = SimplePulseBoard()
     ins.create_ino()
