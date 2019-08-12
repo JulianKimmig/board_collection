@@ -14,9 +14,12 @@ class ThermistorBoardModule(ArduinoBoardModule):
     thermistor_base_resistance = arduio_variable(name="thermistor_base_resistance", arduino_data_type=uint32_t, eeprom=True,default=10**5)
     reference_resistance = arduio_variable(name="reference_resistance", arduino_data_type=uint32_t, eeprom=True,default=10**5)
 
+
     # python_variables
     temperature = python_variable("temperature", type=np.float, changeable=False, is_data_point=True, save=False)
     reference_temperature = python_variable("reference_temperature", type=np.float,default = 298.15,minimum=0)
+    scale_type = python_variable("scale_type", type=np.uint8,default = 298.15,minimum=0,allowed_values={0:"kelvin",1:"celsius",2:"fahrenheit"})
+
     a = python_variable("a", type=np.float,default=1.009249522)
     b = python_variable("b", type=np.float,default=2.378405444)
     c = python_variable("c", type=np.float,default=2.019202697)
@@ -41,7 +44,15 @@ class ThermistorBoardModule(ArduinoBoardModule):
             print(R2)
             logR2 = np.log(R2)
             T = (1.0 / (self.a/10**3 + self.b*logR2/10**4 + self.c*logR2*logR2*logR2/10**7))
+            if self.scale_type == 0:
+                pass
+            else:
+                T = T - 273.15
+                if self.scale_type == 2:
+                    T = T*1.8+32
+
             self.temperature = T
+
         except ZeroDivisionError:
             pass
 
