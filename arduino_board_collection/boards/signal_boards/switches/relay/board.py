@@ -7,12 +7,12 @@ class RelayBoardModule(ArduinoBoardModule):
     basic_board_module = BasicBoardModule
 
     relay_pin = arduio_variable(name="relay_pin", arduino_data_type=uint8_t, eeprom=True)
-    open = arduio_variable(name="open", arduino_data_type=bool_,is_data_point=True)
+    active = arduio_variable(name="open", arduino_data_type=bool_, is_data_point=True)
 
     def instance_arduino_code(self, ad):
         ad.setup.add_call(Arduino.pinMode(self.relay_pin, Arduino.OUTPUT))
         ad.loop.add_call(
-            Arduino.digitalWrite(self.relay_pin, self.open)
+            Arduino.digitalWrite(self.relay_pin, self.active)
         )
         self.relay_pin.arduino_setter.add_call(
             Arduino.pinMode(self.relay_pin, Arduino.OUTPUT)

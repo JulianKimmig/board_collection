@@ -45,9 +45,9 @@ class RelayThermistorModule(ArduinoBoardModule):
             on_time = self.pid(data,target)
             if on_time is not None:
                 if on_time > self.threshold:
-                    self.relay.open = False
+                    self.relay.active = False
                 else:
-                    self.relay.open = True
+                    self.relay.active = True
         else:
             self.reset()
 
