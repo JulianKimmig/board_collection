@@ -1,6 +1,19 @@
 import os
 import time
 
+import numpy as np
+
+
+def generate_pseudorandom_firmware():
+    aa = np.uint64(int(str(time.time()).replace(".", ""))).tobytes()
+    ba = bytearray(reversed(np.uint64(int(str(time.time()).replace(".", ""))).tobytes()))
+    r = np.random.bytes(8)
+    for i in range(len(ba)):
+        if ba[i] == 0:
+            ba[i] = r[i]
+        else:
+            break
+    return np.frombuffer(ba,dtype=np.uint64)
 
 def create_board(path, name, superboard="ArduinoBasicBoard"):
     camelcase = "".join(x for x in name.title() if not x.isspace())
@@ -22,7 +35,7 @@ def create_board(path, name, superboard="ArduinoBasicBoard"):
 
         # boardclass
         code += "\n\nclass " + camelcase + "(" + superboard + "):\n"
-        code += "\tFIRMWARE = " + str(time.time()).replace(".", "") + "\n"
+        code += "\tFIRMWARE = " + str(generate_pseudorandom_firmware) + "\n"
 
         # end
         code += "\n\nif __name__ == '__main__':\n"
