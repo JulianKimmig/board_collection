@@ -1,13 +1,10 @@
-from functools import partial
-
+from ArduinoCodeCreator import basic_types as at
 from ArduinoCodeCreator.arduino import Arduino
 from ArduinoCodeCreator.arduino_data_types import *
 from ArduinoCodeCreator.statements import while_
-from arduino_board_collection.boards.sensor_boards.basic.analog_read_board.board import AnalogReadModule
-from arduino_controller.basicboard.board import ArduinoBoardModule, ArduinoBoard, BasicBoardModule, WRITE_DATA_FUNCTION
 from arduino_controller.arduino_variable import arduio_variable
-from arduino_controller.python_variable import python_variable
-from ArduinoCodeCreator import basic_types as at
+from arduino_controller.basicboard.board import ArduinoBoardModule, ArduinoBoard, BasicBoardModule
+
 
 class AccelStepper(at.ArduinoClass):
     class_name = "AccelStepper"
@@ -50,6 +47,10 @@ class AccelStepper(at.ArduinoClass):
     enableOutputs = at.Function("enableOutputs")
 
     include = "<AccelStepper.h>"
+
+
+
+
 class AccelStepperBoardModule(ArduinoBoardModule):
     #depencies
     basic_board_module = BasicBoardModule
@@ -59,17 +60,21 @@ class AccelStepperBoardModule(ArduinoBoardModule):
     dirPin = arduio_variable(name="dirPin", arduino_data_type=uint8_t, eeprom=True,default=3)
     enablePin = arduio_variable(name="enablePin", arduino_data_type=uint8_t, eeprom=True,default=4)
 
-    stepper_max_speed = arduio_variable(name="stepper_max_speed", arduino_data_type=uint16_t, eeprom=True,default=1000,minimum=1)
-    stepper_acceleration = arduio_variable(name="stepper_acceleration", arduino_data_type=uint16_t, eeprom=True,default=10,minimum=1)
-    max_steps_per_loop = arduio_variable(name="max_steps_per_loop", arduino_data_type=uint8_t, eeprom=True,default=1,minimum=1)
-
-    target_position = arduio_variable(name="target_position", arduino_data_type=int32_t,save=False)
-
-    stepper_current_position = arduio_variable(name="stepper_current_position", arduino_data_type=int32_t, default=0, save=True,is_data_point=True)
-
     stepper = accel_stepper("stepper")
 
     reinitalize_stepper  =  at.Function("reinitalize_stepper")
+    max_steps_per_loop = arduio_variable(name="max_steps_per_loop", arduino_data_type=uint8_t, eeprom=True,default=1,minimum=1)
+
+    steps_per_mm = arduio_variable("steps_per_mm",uint16_t,eeprom=True,default = 200,minimum=1)
+
+    #step_per_mm_dependend
+    stepper_max_speed = arduio_variable(name="stepper_max_speed", arduino_data_type=float_, eeprom=True,default=1000,minimum=0.01,html_attributes={"step":0.01})
+    stepper_acceleration = arduio_variable(name="stepper_acceleration", arduino_data_type=float_, eeprom=True,default=10,minimum=0.01,html_attributes={"step":0.01})
+    target_position = arduio_variable(name="target_position", arduino_data_type=float_,save=False,html_attributes={"step":0.1})
+    stepper_current_position = arduio_variable(name="stepper_current_position", arduino_data_type=float_, default=0, save=True,is_data_point=True,html_attributes={"step":0.1})
+
+
+
     @classmethod
     def module_arduino_code(cls,board,arduino_code_creator):
         arduino_code_creator.setup.add_call(
@@ -83,9 +88,9 @@ class AccelStepperBoardModule(ArduinoBoardModule):
             while_(self.stepper.run()),
             self.stepper.disableOutputs(),
             self.stepper.reinitalize(),
-            self.stepper.setMaxSpeed(self.stepper_max_speed),
-            self.stepper.setCurrentPosition(self.stepper_current_position),
-            self.stepper.setAcceleration(self.stepper_acceleration),
+            self.stepper.setMaxSpeed(self.stepper_max_speed*self.steps_per_mm),
+            self.stepper.setCurrentPosition(self.stepper_current_position*self.steps_per_mm),
+            self.stepper.setAcceleration(self.stepper_acceleration*self.steps_per_mm),
             self.stepper.setEnablePin(self.enablePin),
         )
         self.stepPin.arduino_setter.add_call(self.reinitalize_stepper())
@@ -95,14 +100,14 @@ class AccelStepperBoardModule(ArduinoBoardModule):
 
         ad.setup.add_call(self.reinitalize_stepper())
 
-        self.stepper_current_position.arduino_setter.add_call(self.stepper.setCurrentPosition(self.stepper_current_position))
-        self.stepper_current_position.arduino_getter.prepend_call(self.stepper_current_position.set(self.stepper.currentPosition()))
+        self.stepper_current_position.arduino_setter.add_call(self.stepper.setCurrentPosition(self.stepper_current_position*self.steps_per_mm))
+        self.stepper_current_position.arduino_getter.prepend_call(self.stepper_current_position.set(self.stepper.currentPosition()/self.steps_per_mm.cast(float_)))
 
-        self.stepper_max_speed.arduino_setter.add_call(self.stepper.setMaxSpeed(self.stepper_max_speed))
-        self.stepper_acceleration.arduino_setter.add_call(self.stepper.setAcceleration(self.stepper_acceleration))
+        self.stepper_max_speed.arduino_setter.add_call(self.stepper.setMaxSpeed(self.stepper_max_speed*self.steps_per_mm))
+        self.stepper_acceleration.arduino_setter.add_call(self.stepper.setAcceleration(self.stepper_acceleration*self.steps_per_mm))
 
         self.target_position.arduino_setter.add_call(
-            self.stepper.moveTo(self.target_position)
+            self.stepper.moveTo(self.target_position*self.steps_per_mm)
         )
 
         steps_in_loop = ad.add(at.Variable(name="steps_in_loop", type=uint8_t,value=0))
@@ -111,13 +116,25 @@ class AccelStepperBoardModule(ArduinoBoardModule):
             while_((steps_in_loop.increment()<self.max_steps_per_loop).and_(self.stepper.run()))
         )
 
-        self.basic_board_module.dataloop.add_call(
-            WRITE_DATA_FUNCTION(self.stepper.currentPosition(), self.board.byte_ids.get(self.stepper_current_position.arduino_getter))
+        self.basic_board_module.dataloop.prepend_call(
+            self.stepper_current_position.set(self.stepper.currentPosition()/self.steps_per_mm.cast(float_)),
         )
     def post_initalization(self):
-       #self.analog_read_module.analog_value.setter = self.resistance_to_temperature
-        pass
+        for var in [
+            self.stepper_max_speed,
+            self.stepper_acceleration,
+            self.target_position,
+            self.stepper_current_position
+        ]:
+            #var.modulvar_getter_modification(self.step_to_mm)
+            #var.modulvar_setter_modification(self.mm_to_step)
+            #var.data_point_modification(self.step_to_mm)
+            pass
+    def mm_to_step(self,mm):
+        return mm*self.steps_per_mm
 
+    def step_to_mm(self,step):
+        return step/self.steps_per_mm
 
 class AccelStepperBoard(ArduinoBoard):
     FIRMWARE = 13264008974968030663
