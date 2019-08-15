@@ -28,17 +28,17 @@ class RgbLed(ArduinoBasicBoard):
             Arduino.analogWrite(self.blue_pin, self.blue),
         )
 
-        self.blue_pin.arduino_setter.prepent_call(Arduino.analogWrite(self.blue_pin, 0))
+        self.blue_pin.arduino_setter.prepend_call(Arduino.analogWrite(self.blue_pin, 0))
         self.blue_pin.arduino_setter.add_call(
             Arduino.pinMode(self.blue_pin, Arduino.OUTPUT)
         )
 
-        self.red_pin.arduino_setter.prepent_call(Arduino.analogWrite(self.red_pin, 0))
+        self.red_pin.arduino_setter.prepend_call(Arduino.analogWrite(self.red_pin, 0))
         self.red_pin.arduino_setter.add_call(
             Arduino.pinMode(self.red_pin, Arduino.OUTPUT)
         )
 
-        self.green_pin.arduino_setter.prepent_call(
+        self.green_pin.arduino_setter.prepend_call(
             Arduino.analogWrite(self.green_pin, 0)
         )
         self.green_pin.arduino_setter.add_call(

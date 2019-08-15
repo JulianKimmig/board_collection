@@ -35,7 +35,7 @@ def create_board(path, name, superboard="ArduinoBasicBoard"):
 
         # boardclass
         code += "\n\nclass " + camelcase + "(" + superboard + "):\n"
-        code += "\tFIRMWARE = " + str(generate_pseudorandom_firmware) + "\n"
+        code += "\tFIRMWARE = " + str(generate_pseudorandom_firmware()) + "\n"
 
         # end
         code += "\n\nif __name__ == '__main__':\n"
