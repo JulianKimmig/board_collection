@@ -75,12 +75,6 @@ class AccelStepperBoardModule(ArduinoBoardModule):
 
 
 
-    @classmethod
-    def module_arduino_code(cls,board,arduino_code_creator):
-        arduino_code_creator.setup.add_call(
-            Arduino.analogReference(Arduino.EXTERNAL)
-        )
-
     def instance_arduino_code(self, ad):
         self.stepper=self.accel_stepper("stepper",AccelStepper.motor_interface_type["DRIVER"],self.stepPin,self.dirPin)
         self.reinitalize_stepper.add_call(
