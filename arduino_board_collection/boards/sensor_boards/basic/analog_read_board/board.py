@@ -3,7 +3,11 @@ from ArduinoCodeCreator.arduino_data_types import *
 from ArduinoCodeCreator.basic_types import *
 from ArduinoCodeCreator.statements import *
 from arduino_controller.arduino_variable import arduio_variable
-from arduino_controller.basicboard.board import ArduinoBoardModule, BasicBoardModule, ArduinoBoard
+from arduino_controller.basicboard.board import (
+    ArduinoBoardModule,
+    BasicBoardModule,
+    ArduinoBoard,
+)
 from arduino_controller.python_variable import python_variable
 
 
@@ -13,9 +17,16 @@ class AnalogReadModule(ArduinoBoardModule):
 
     # arduino_variables
     samples = arduio_variable(name="samples", arduino_data_type=uint8_t, eeprom=True)
-    analog_value = arduio_variable(name="analog_value", arduino_data_type=uint16_t, arduino_setter=False,
-                                   is_data_point=True, save=False)
-    analog_pin = arduio_variable(name="analog_pin", arduino_data_type=uint8_t, eeprom=True)
+    analog_value = arduio_variable(
+        name="analog_value",
+        arduino_data_type=uint16_t,
+        arduino_setter=False,
+        is_data_point=True,
+        save=False,
+    )
+    analog_pin = arduio_variable(
+        name="analog_pin", arduino_data_type=uint8_t, eeprom=True
+    )
 
     average = Variable("average", uint32_t, 0)
 
@@ -24,9 +35,12 @@ class AnalogReadModule(ArduinoBoardModule):
             Arduino.analogRead(self.analog_pin),
             Arduino.delay(10),
             self.average.set(0),
-            for_(for_.i, for_.i < self.samples, 1,
-                 self.average.set(self.average + Arduino.analogRead(self.analog_pin))
-                 ),
+            for_(
+                for_.i,
+                for_.i < self.samples,
+                1,
+                self.average.set(self.average + Arduino.analogRead(self.analog_pin)),
+            ),
             self.analog_value.set(self.average / self.samples),
         )
         self.analog_pin.arduino_setter.add_call(

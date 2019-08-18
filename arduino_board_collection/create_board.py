@@ -6,20 +6,23 @@ import numpy as np
 
 def generate_pseudorandom_firmware():
     aa = np.uint64(int(str(time.time()).replace(".", ""))).tobytes()
-    ba = bytearray(reversed(np.uint64(int(str(time.time()).replace(".", ""))).tobytes()))
+    ba = bytearray(
+        reversed(np.uint64(int(str(time.time()).replace(".", ""))).tobytes())
+    )
     r = np.random.bytes(8)
     for i in range(len(ba)):
         if ba[i] == 0:
             ba[i] = r[i]
         else:
             break
-    return np.frombuffer(ba,dtype=np.uint64)[0]
+    return np.frombuffer(ba, dtype=np.uint64)[0]
+
 
 def create_board(path, name, superboard="ArduinoBasicBoard"):
     camelcase = "".join(x for x in name.title() if not x.isspace())
     snakename = name.lower().replace(" ", "_")
     os.makedirs(os.path.join(path, snakename), exist_ok=True)
-    firmware=generate_pseudorandom_firmware()
+    firmware = generate_pseudorandom_firmware()
     if os.path.exists(os.path.join(path, snakename, "board.py")):
         raise ValueError(
             name + "already exists as board: " + str(os.path.join(path, snakename))
@@ -37,7 +40,7 @@ def create_board(path, name, superboard="ArduinoBasicBoard"):
         code += "\n"
         code += "\n"
         code += "class {}Module(ArduinoBoardModule):\n".format(camelcase)
-        code += "\t# depencies\n"#
+        code += "\t# depencies\n"  #
         code += "\tbasic_board_module = BasicBoardModule\n"
         code += "\n"
         code += "\t# python_variables\n"
@@ -59,6 +62,7 @@ def create_board(path, name, superboard="ArduinoBasicBoard"):
         code += "\tins = {}Board()\n".format(camelcase)
         code += "\tins.create_ino()"
         f.write(code.replace("\t", "    "))
+
 
 if __name__ == "__main__":
     create_board(
