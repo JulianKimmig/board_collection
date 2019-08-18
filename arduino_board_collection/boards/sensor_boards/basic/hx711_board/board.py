@@ -76,10 +76,11 @@ class HX711Module(ArduinoBoardModule):
     nread = arduio_variable(name="nread", arduino_data_type=uint8_t, eeprom=True)
     value = arduio_variable(
         name="value",
-        arduino_data_type=long_,
+        arduino_data_type=float_,
         arduino_setter=None,
         is_data_point=True,
         changeable=False,
+        save=False,
     )
     reinitalize_hx711 = at.Function("reinitalize_hx711")
 
@@ -108,7 +109,7 @@ class HX711Module(ArduinoBoardModule):
 
         ad.setup.add_call(self.reinitalize_hx711())
         self.basic_board_module.dataloop.prepend_call(
-            self.value.set(self.hx711_scale.read_average(self.nread))
+            self.value.set(self.hx711_scale.get_units(self.nread))
         )
 
 
