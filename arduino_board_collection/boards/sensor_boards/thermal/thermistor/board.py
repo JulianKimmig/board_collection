@@ -16,7 +16,6 @@ class ThermistorBoardModule(ArduinoBoardModule):
     thermistor_base_resistance = arduio_variable(name="thermistor_base_resistance", arduino_data_type=uint32_t, eeprom=True,default=10**5)
     reference_resistance = arduio_variable(name="reference_resistance", arduino_data_type=uint32_t, eeprom=True,default=10**5)
 
-
     # python_variables
     temperature = python_variable("temperature", type=np.float, changeable=False, is_data_point=True, save=False)
     reference_temperature = python_variable("reference_temperature", type=np.float,default = 298.15,minimum=0)
@@ -33,12 +32,9 @@ class ThermistorBoardModule(ArduinoBoardModule):
         arduino_code_creator.setup.add_call(Arduino.analogReference(Arduino.EXTERNAL))
 
     def post_initalization(self):
-        self.analog_read_module.analog_value.setter = self.resistance_to_temperature
+        self.analog_read_module.analog_value.data_point_modification(self.resistance_to_temperature)
 
-    def resistance_to_temperature(self,var, instance, data, send_to_board=True):
-        var.default_setter(
-            var=var, instance=instance, data=data, send_to_board=send_to_board
-        )
+    def resistance_to_temperature(self, data):
         try:
             R2 = self.reference_resistance*data/ (1023.0-data)
             Tk=R2/self.thermistor_base_resistance
@@ -49,6 +45,7 @@ class ThermistorBoardModule(ArduinoBoardModule):
             self.temperature = Tk
         except ZeroDivisionError:
             pass
+        return data
 
         # try:
         #     R2 = self.reference_resistance*data/ (1023.0-data)

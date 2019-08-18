@@ -10,7 +10,7 @@ class DutyCycleBoardModule(ArduinoBoardModule):
 
     signal_pin = arduio_variable(name="signal_pin", arduino_data_type=uint8_t, eeprom=True)
     full_cycle = arduio_variable(name="full_cycle", arduino_data_type=uint32_t, eeprom=True,)
-    duty_cycle = arduio_variable(name="duty_cycle", arduino_data_type=uint8_t, is_data_point=True,minimum=0,maximum=100)
+    duty_cycle = arduio_variable(name="duty_cycle", arduino_data_type=float_,minimum=0,maximum=100,html_attributes={"step":0.1})
 
     last_cycle = Variable("last_cycle",uint32_t,0)
     cycletime = Variable("cycletime",uint32_t,0)
@@ -31,7 +31,7 @@ class DutyCycleBoardModule(ArduinoBoardModule):
             elseif_(self.duty_cycle == 100,
                     Arduino.digitalWrite(self.signal_pin, Arduino.LOW)
                      ),
-            elseif_(self.cycletime < self.full_cycle*(self.duty_cycle.cast(float_)/self.duty_cycle.maximum),
+            elseif_(self.cycletime < self.full_cycle*((self.duty_cycle.cast(float_)/self.duty_cycle.maximum)),
                 Arduino.digitalWrite(self.signal_pin, Arduino.LOW)
                 ),
             else_(Arduino.digitalWrite(self.signal_pin, Arduino.HIGH))

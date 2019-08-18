@@ -1,13 +1,12 @@
 import time
-from functools import partial
 
 from ArduinoCodeCreator.arduino_data_types import *
-from arduino_board_collection.boards.sensor_boards.thermal.thermistor.board import ThermistorBoardModule
+from arduino_board_collection.boards.sensor_boards.thermal.max6675.board import Max6675BoardModule
 from arduino_board_collection.boards.signal_boards.pulses.dutycycle_digital.board import DutyCycleBoardModule
-from arduino_board_collection.boards.signal_boards.switches.relay.board import RelayBoardModule
+from arduino_controller.arduino_variable import arduio_variable
 from arduino_controller.basicboard.board import ArduinoBoard, ArduinoBoardModule
 from arduino_controller.python_variable import python_variable
-from arduino_controller.arduino_variable import arduio_variable
+
 try:
     _current_time = time.monotonic
 except AttributeError:
@@ -68,8 +67,8 @@ class PidBoardModule(ArduinoBoardModule):
         return output
 
 
-class RelayThermistorBangBangModule(ArduinoBoardModule):
-    thermistor = ThermistorBoardModule
+class RelayMax6675BangBangModule(ArduinoBoardModule):
+    max6675 = Max6675BoardModule
     relay = DutyCycleBoardModule
     pid = PidBoardModule
 
@@ -81,7 +80,7 @@ class RelayThermistorBangBangModule(ArduinoBoardModule):
 
 
     def post_initalization(self):
-        self.thermistor.temperature.data_point_modification(self.bang_bang_temperature)
+        self.max6675.temperature.data_point_modification(self.bang_bang_temperature)
         self.relay.duty_cycle.is_data_point = True
         self.relay.duty_cycle.changeable = False
         self.pid.minimum = self.relay.duty_cycle.minimum
@@ -102,10 +101,10 @@ class RelayThermistorBangBangModule(ArduinoBoardModule):
         return data
 
 
-class Relay2ThermistorBangBangBoard(ArduinoBoard):
-    FIRMWARE = 15657144496468015
-    modules = [RelayThermistorBangBangModule,ThermistorBoardModule]
+class RelayMax6675BangBangBoard(ArduinoBoard):
+    FIRMWARE = 15657144496468016
+    modules = [RelayMax6675BangBangModule]
 
 if __name__ == '__main__':
-    ins = Relay2ThermistorBangBangBoard()
+    ins = RelayMax6675BangBangBoard()
     ins.create_ino()
