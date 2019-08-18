@@ -1,77 +1,15 @@
-import time
-from functools import partial
-
 from ArduinoCodeCreator.arduino_data_types import *
+from arduino_board_collection.boards.controller_boards.basic.pid.board import PIDModule
 from arduino_board_collection.boards.sensor_boards.thermal.thermistor.board import ThermistorBoardModule
 from arduino_board_collection.boards.signal_boards.pulses.dutycycle_digital.board import DutyCycleBoardModule
-from arduino_board_collection.boards.signal_boards.switches.relay.board import RelayBoardModule
 from arduino_controller.basicboard.board import ArduinoBoard, ArduinoBoardModule
 from arduino_controller.python_variable import python_variable
-from arduino_controller.arduino_variable import arduio_variable
-try:
-    _current_time = time.monotonic
-except AttributeError:
-    _current_time = time.time
-
-
-class PidBoardModule(ArduinoBoardModule):
-    target=0
-    current=0
-    minimum=0
-    maximim=0
-    kp = arduio_variable("kp", arduino_data_type=float_,eeprom=True,html_attributes={"step":0.1},minimum=0)
-    ki = arduio_variable("ki", arduino_data_type=float_,eeprom=True,html_attributes={"step":0.1},minimum=0)
-    kd = arduio_variable("kd", arduino_data_type=float_,eeprom=True,html_attributes={"step":0.1},minimum=0)
-
-    def post_initalization(self):
-        self._last_time = _current_time()
-        self._last_input = None
-        self._integral = 0
-
-    def reset(self):
-        self._last_time = None
-        self._last_input = None
-        self._integral = 0
-
-    def crop(self,value):
-        return min(self.maximum,max(self.minimum,value))
-
-    def pid(self):
-        if self._last_input is None:
-            self._last_time = _current_time()
-            time.sleep(0.01)
-        now = _current_time()
-        if now - self._last_time:
-            dt = now - self._last_time
-        else:
-            return None
-        error = self.target - self.current
-        d_input = self.current - (self._last_input if self._last_input is not None else self.current)
-
-        # compute integral and derivative terms
-        proportional = self.kp*error
-        self._integral += self.ki * error * dt
-        self._integral = self.crop(self._integral)  # avoid integral windup
-
-        derivative = -self.kd * d_input / dt
-
-        # compute final output
-        output = proportional + self._integral + derivative
-        output = self.crop(output)
-
-        self._last_input = self.current
-        self._last_time = now
-        if output is None:
-            if self.minimum is None:
-                return 0
-            return self.minimum
-        return output
 
 
 class RelayThermistorBangBangModule(ArduinoBoardModule):
     thermistor = ThermistorBoardModule
     relay = DutyCycleBoardModule
-    pid = PidBoardModule
+    pid = PIDModule
 
     target_temperature = python_variable("target_temperature", type=np.float,default = 298.15)
     max_temperature = python_variable("max_temperature", type=np.float,default = 300,minimum=0)

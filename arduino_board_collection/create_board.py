@@ -13,12 +13,13 @@ def generate_pseudorandom_firmware():
             ba[i] = r[i]
         else:
             break
-    return np.frombuffer(ba,dtype=np.uint64)
+    return np.frombuffer(ba,dtype=np.uint64)[0]
 
 def create_board(path, name, superboard="ArduinoBasicBoard"):
     camelcase = "".join(x for x in name.title() if not x.isspace())
     snakename = name.lower().replace(" ", "_")
     os.makedirs(os.path.join(path, snakename), exist_ok=True)
+    firmware=generate_pseudorandom_firmware()
     if os.path.exists(os.path.join(path, snakename, "board.py")):
         raise ValueError(
             name + "already exists as board: " + str(os.path.join(path, snakename))
@@ -26,26 +27,41 @@ def create_board(path, name, superboard="ArduinoBasicBoard"):
 
     with open(os.path.join(path, snakename, "board.py"), "w+") as f:
         code = ""
-        if superboard == "ArduinoBasicBoard":
-            code += (
-                "from arduino_controller.basicboard.board import ArduinoBasicBoard\n"
-            )
-        code += "from ArduinoCodeCreator.arduino_data_types import *"
+        code += "from ArduinoCodeCreator.arduino import *\n"
+        code += "from ArduinoCodeCreator.arduino_data_types import *\n"
+        code += "from ArduinoCodeCreator.basic_types import *\n"
+        code += "from ArduinoCodeCreator.statements import *\n"
         code += "from arduino_controller.arduino_variable import arduio_variable\n"
-
-        # boardclass
-        code += "\n\nclass " + camelcase + "(" + superboard + "):\n"
-        code += "\tFIRMWARE = " + str(generate_pseudorandom_firmware()) + "\n"
-
-        # end
-        code += "\n\nif __name__ == '__main__':\n"
-        code += "\tins = " + camelcase + "()\n"
-        code += "\tins.create_ino()\n"
+        code += "from arduino_controller.basicboard.board import ArduinoBoardModule, BasicBoardModule, ArduinoBoard\n"
+        code += "from arduino_controller.python_variable import python_variable\n"
+        code += "\n"
+        code += "\n"
+        code += "class {}Module(ArduinoBoardModule):\n".format(camelcase)
+        code += "\t# depencies\n"#
+        code += "\tbasic_board_module = BasicBoardModule\n"
+        code += "\n"
+        code += "\t# python_variables\n"
+        code += "\n"
+        code += "\t# arduino_variables\n"
+        code += "\n"
+        code += "\tdef instance_arduino_code(self, ad):\n"
+        code += "\t\tad.loop.add_call()\n"
+        code += "\t\tad.setup.add_call()\n"
+        code += "\t\tself.basic_board_module.dataloop.add_call()\n"
+        code += "\n"
+        code += "\n"
+        code += "class {}Board(ArduinoBoard):\n".format(camelcase)
+        code += "\tFIRMWARE = {}\n".format(firmware)
+        code += "\tmodules = [{}Module]\n".format(camelcase)
+        code += "\n"
+        code += "\n"
+        code += "if __name__ == '__main__':\n"
+        code += "\tins = {}Board()\n".format(camelcase)
+        code += "\tins.create_ino()"
         f.write(code.replace("\t", "    "))
-
 
 if __name__ == "__main__":
     create_board(
         path=os.path.join(os.path.dirname(__file__), "boards", "test"),
-        name="Testboard " + str(int(time.time())),
+        name="autocreated " + str(int(time.time())),
     )

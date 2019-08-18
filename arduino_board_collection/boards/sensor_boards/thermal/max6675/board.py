@@ -13,7 +13,7 @@ from ArduinoCodeCreator import basic_types as at
 
 class Max6675BoardModule(ArduinoBoardModule):
     spim = SerialPeripheralInterfaceModule
-    temperature = arduio_variable(name="temperature", arduino_data_type=double_,arduino_setter=False,setter=None,is_data_point=True)
+    temperature = arduio_variable(name="temperature", arduino_data_type=double_,arduino_setter=False,setter=None,is_data_point=True,save=False)
     cs_pin = arduio_variable(name="cs_pin", arduino_data_type=uint8_t, eeprom=True)
 
     def instance_arduino_code(self, ad):

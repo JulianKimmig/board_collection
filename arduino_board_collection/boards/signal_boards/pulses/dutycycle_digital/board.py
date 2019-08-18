@@ -10,7 +10,7 @@ class DutyCycleBoardModule(ArduinoBoardModule):
 
     signal_pin = arduio_variable(name="signal_pin", arduino_data_type=uint8_t, eeprom=True)
     full_cycle = arduio_variable(name="full_cycle", arduino_data_type=uint32_t, eeprom=True,)
-    duty_cycle = arduio_variable(name="duty_cycle", arduino_data_type=float_,minimum=0,maximum=100,html_attributes={"step":0.1})
+    duty_cycle = arduio_variable(name="duty_cycle", arduino_data_type=float_,minimum=0,maximum=100,html_attributes={"step":0.1},save=False)
 
     last_cycle = Variable("last_cycle",uint32_t,0)
     cycletime = Variable("cycletime",uint32_t,0)
