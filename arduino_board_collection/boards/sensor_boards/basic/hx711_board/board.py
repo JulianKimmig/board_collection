@@ -10,7 +10,6 @@ from arduino_controller.basicboard.board import (
 )
 from arduino_controller.arduino_variable import arduio_variable
 
-
 class HX711(at.ArduinoClass):
     class_name = "HX711"
     gains = at.ArduinoEnum(
@@ -46,10 +45,17 @@ class HX711(at.ArduinoClass):
 
     include = "<HX711.h>"
 
+#https://github.com/EdwinCroissantArduinoLibraries/SimpleHX711
+#([^\s]*) ([^\s]*)\((.*)\); with $2 = at.Function("$2",$3,return_type=$1)
+# ,, with ,
+#,return_type=void with
+
 
 class HX711Module(ArduinoBoardModule):
     # depencies
     basic_board_module = BasicBoardModule
+    #sets minimum datarate
+    basic_board_module.data_rate.minimum = max(basic_board_module.data_rate.minimum,180)
 
     # arduino_variables
     hx711 = HX711()
@@ -85,6 +91,7 @@ class HX711Module(ArduinoBoardModule):
     reinitalize_hx711 = at.Function("reinitalize_hx711")
 
     def instance_arduino_code(self, ad):
+
         self.reinitalize_hx711.add_call(
             self.hx711_scale.power_down(),
             self.hx711_scale.begin(self.doutPin, self.sckPin, self.gain),
@@ -120,4 +127,5 @@ class HX711Board(ArduinoBoard):
 
 if __name__ == "__main__":
     ins = HX711Board()
+    print("AA")
     ins.create_ino()
